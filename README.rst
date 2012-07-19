@@ -16,7 +16,7 @@ not be relied upon.
 
 Numbers may internally be represented as negative, however no numeric literal
 is capable of being negative. Instead, the negation prefix operation is used to
-make numbers negative (`n`).
+make numbers negative (`n`). ::
 
     123
     .15
@@ -30,7 +30,7 @@ Whitespace
 
 All whitespace is ignored, however, whitespace will cause continuations to be
 broken and the top prefix expression will stop accepting new tuple values. This
-means that tuples can be very easily divided up:
+means that tuples can be very easily divided up: ::
 
     a && b + c && d)
     (&a,b)+(&c,d)
@@ -41,7 +41,7 @@ Continuations/Tuples
 
 Each operation only accepts one parameter. However, tuples can be built out
 using the continuation construct (represented by a comma `,`). The continuation
-construct is an infix operator.
+construct is an infix operator. ::
 
     p123,456
     C44,56,203
@@ -50,7 +50,7 @@ Blocks
 ------
 
 Blocks begin with an operation and end with a closing parenthesis. Closing
-parenthesis always close the innermost block.
+parenthesis always close the innermost block. ::
 
     L20a0,a0 *2)
 
@@ -64,7 +64,7 @@ Block
 
 =========  ======  ===========================================================
 Name       Symbol  Description
----------  ------  -----------------------------------------------------------
+=========  ======  ===========================================================
 Loop       L..)    The bytecode within the block is executed N times where N
                    is the number returned by the first expression within the
                    block.
@@ -87,16 +87,18 @@ All        A..)    Each expression within the block is evaluated sequentially.
                    evaluates to zero, 1 is returned.
 Sum        U..)    Sums and returns the return values of the evaluated
                    expressions within the block.
+=========  ======  ===========================================================
 
 No Params
 ~~~~~~~~~
 
-===========  ======  ==========================================================
+===========  ======  =========================================================
 Name         Symbol  Description
------------  ------  ----------------------------------------------------------
-Clear Mat    #       Clears the transformations on the cursor's matrix
-Pop Matrix   <       Pops the last transformation matrix from the top of the
+===========  ======  =========================================================
+Clear Mat    #       Clear the transformations on the cursor's matrix.
+Pop Mat      <       Pops the last transformation matrix from the top of the
                      stack.
+===========  ======  =========================================================
 
 
 Prefix - Statements
@@ -106,12 +108,12 @@ These operations may only be contained within a block.
 
 ===========  ======  ==========================================================
 Name         Symbol  Description
------------  ------  ----------------------------------------------------------
+===========  ======  ==========================================================
 Color        c       Changes the active color to the color represented by the
                      color specified in the parameter.
-RGB Color    C       Changes the active color to the RGB[A] color represented
+RGB          C       Changes the active color to the RGB[A] color represented
                      by the three or four-tuple parameter.
-CMYK Color   K       Changes the active color to the CMYK color represented by
+CMYK         K       Changes the active color to the CMYK color represented by
                      the four-tuple parameter.
 Cursor       p       Places the cursor at the two-tuple coordinates specified
                      by the parameter.
@@ -124,6 +126,7 @@ Scale        S       Scale the matrix used by the cursor by the (x_scale,
                      y_scale) two-tuple specified by the parameter.
 Path         P       Draw a solid line from the last location that any drawing
                      occurred at to the current cursor position.
+===========  ======  ==========================================================
 
 Prefix - Expressions
 ~~~~~~~~~~~~~~~~~~~~
@@ -135,11 +138,11 @@ and have no side effects\*, making them useless within a block.
 
 ===========  ======  ==========================================================
 Name         Symbol  Description
------------  ------  ----------------------------------------------------------
+===========  ======  ==========================================================
 Negate       n       The equivalent of param * -1
 Not          N       param == 0
 And          &       param[0] == 0 ? 0 : param[1]
-Or           |       param[0] != 0 ? param[0] : param[1]
+Or           \|      param[0] != 0 ? param[0] : param[1]
 Iff          i       param[0] ? param[1] : param[2]
 XOR          X       &(N&<param0>,<param1>),|(<param0>,<param1>)
 Sine         s       sin(param)
@@ -153,7 +156,7 @@ Ceil         `       ceil(param)
 Square       "       Returns the square of the parameter
 Inverter     !       A special operation. Any trigonemetric function within it
                      is made to be the inverse. I.e.: !s2 == sin^-1(2)
-Root         \       Square root. If a two-tuple is provided, the second value
+Root         \\      Square root. If a two-tuple is provided, the second value
                      is used as the degree of the root.
 Assign       a       If the parameter is a two-tuple, the second value is
                      assigned to a global "variable" in the position denoted by
@@ -164,6 +167,7 @@ Call         q       Calls a function or lambda with the arguments passed in
                      the parameter. The first element of the tuple in the
                      parameter must be the number given to the function or
                      lambda.
+===========  ======  ==========================================================
 
 
 Infix
@@ -171,28 +175,22 @@ Infix
 
 All infix operations behave the same as prefix expression operations with the
 sole exception that their operator is between first and second values that would
-otherwise be joined into a tuple.
+otherwise be joined into a tuple. ::
 
     <PREFIX>1,2 == 1<INFIX>2
 
 ===========  ======  ==========================================================
 Name         Symbol  Description
------------  ------  ----------------------------------------------------------
-Plus         +       x + y
-Minus        -       x - y
-Mult         *       x * y
+===========  ======  ==========================================================
+Plus         \+      x + y
+Minus        \-      x - y
+Mult         \*      x * y
 Div          /       x / y
 Pow          ^       x ** y
 Mod          %       x % y
 Int Div      ~       floor(x / y)
 Powmod       M       powmod(x, y)
-
-
-Block Expression Exception
-~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-One block-level operation is an exception to the rule: `(..)` is an expression.
-It takes the same precedence, however, as any block operation.
+===========  ======  ==========================================================
 
 
 Operation Precedence
@@ -200,12 +198,12 @@ Operation Precedence
 
 There are fewer precedence rules in GBC than in standard languages:
 
-# Blocks will always be obeyed, no matter what.
-# Block statements will never be placed into infix operations.
-# Infix operations will never end a tuple (i.e.: `\a3+4,5 == \(a(3+4,5))`)
-# Whitespace will always end the top expression or statement (and consequently
-  break any open tuples)
-# Whitespace will never end a block.
+1. Blocks will always be obeyed, no matter what.
+2. Block statements will never be placed into infix operations.
+3. Infix operations will never end a tuple (i.e.: `\a3+4,5 == \(a(3+4,5))`)
+4. Whitespace will always end the top expression or statement (and consequently
+   break any open tuples)
+5. Whitespace will never end a block.
 
 
 Comments
