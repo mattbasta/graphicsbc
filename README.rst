@@ -143,7 +143,7 @@ Negate       n       The equivalent of param * -1
 Not          N       param == 0
 And          &       param[0] == 0 ? 0 : param[1]
 Or           \|      param[0] != 0 ? param[0] : param[1]
-Iff          i       param[0] ? param[1] : param[2]
+Iff          I       param[0] ? param[1] : param[2]
 XOR          X       &(N&<param0>,<param1>),|(<param0>,<param1>)
 Sine         s       sin(param)
 Cosine       o       cos(param)
@@ -190,6 +190,10 @@ Pow          ^       x ** y
 Mod          %       x % y
 Int Div      ~       floor(x / y)
 Powmod       M       powmod(x, y)
+Greater      >       x > y
+Greater/Eq   g       x >= y
+Equal        =       x == y
+Not Equal    x       x != y
 ===========  ======  ==========================================================
 
 
@@ -204,6 +208,8 @@ There are fewer precedence rules in GBC than in standard languages:
 4. Whitespace will always end the top expression or statement (and consequently
    break any open tuples)
 5. Whitespace will never end a block.
+6. All infix operators are computed in the order that they're encountered. Order
+   of operations is not obeyed.
 
 
 Comments
