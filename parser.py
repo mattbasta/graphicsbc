@@ -18,6 +18,7 @@ class Parser(object):
         self.data = data
         self.buffer = ""
         self.blocks = [BlockOperation()]
+        self.expressions = []
 
     def push_block(self, block):
         self.blocks.append(block)
@@ -29,6 +30,14 @@ class Parser(object):
 
     def push_to_block(self, node):
         self.blocks[-1].push(node)
+
+    def collapse_expressions(self):
+        e = None
+        while self.expressions:
+            e = self.expressions.pop()
+            if self.expressions:
+                self.expressions[-1].push(e)
+        return e
 
     def run():
         for char in self.data:
@@ -60,6 +69,11 @@ class Parser(object):
                     self.pop_block()
                 continue
 
+        if self.expressions:
+            raise Exception("Expressions remaining on the stack at termination.")
+
         body = self.blocks.pop()
         if self.blocks:
             raise Exception("Unclosed blocks detected at end of program.")
+
+        return body

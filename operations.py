@@ -7,8 +7,24 @@ def oper(name):
 
 
 class Operation(object):
+    def has_return_value(self):
+        raise NotImplementedError()
+
+    def push(self, operation):
+        raise NotImplementedError()
+
     def run(self):
         pass
+
+
+class Statement(Operation):
+    def has_return_value(self):
+        return False
+
+
+class Expression(Operation):
+    def has_return_value(self):
+        return True
 
 
 class BlockOperation(Operation):
@@ -23,11 +39,23 @@ class BlockOperation(Operation):
             op.run()
 
 
-class NoParamStatement(Operation):
+class FirstExprBlockOperation(BlockOperation):
+    def __init__(self):
+        self.first = None
+        self.body = []
+
+    def push(self, operation):
+        if self.first is None:
+            self.first = operation
+            return
+        return super(FirstExprBlockOperation, self).push(operation)
+
+
+class NoParamStatement(Statement):
     pass
 
 
-class InfixOperation(Operation):
+class InfixOperation(Expression):
     def __init__(self, left):
         self.left = left
         self.right = None
@@ -37,13 +65,16 @@ class InfixOperation(Operation):
 
 
 @oper(",")
-class Continuation(Operation):
-    def __init__(self):
-        self.value = []
+class Continuation(InfixOperation):
+    def __init__(self, left):
+        if isinstance(left, Continuation):
+            self.value = left.value
+        else:
+            self.value = [left]
 
     def push(self, operation):
         if isinstance(operation, Continuation):
-            self.value += operation.value
+            self.value = operation.value
             return
         self.value.append(operation)
 
