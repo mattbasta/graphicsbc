@@ -81,10 +81,12 @@ Function   {..)    The bytecode within the block is executed when the ID
 Any        T..)    Each expression within the block is evaluated sequentially
                    until one of the expressions is non-zero, at which point
                    that expression is returned. If no expression evaluates to
-                   a non-zero value, 0 is returned.
+                   a non-zero value, 0 is returned. This operation will short
+                   circuit.
 All        A..)    Each expression within the block is evaluated sequentially.
                    If any expression equals 0, 0 is returned. If no expression
-                   evaluates to zero, 1 is returned.
+                   evaluates to zero, 1 is returned. This operation will short
+                   circuit.
 Sum        U..)    Sums and returns the return values of the evaluated
                    expressions within the block.
 =========  ======  ===========================================================
