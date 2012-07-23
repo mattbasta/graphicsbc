@@ -3,7 +3,8 @@ from operations import *
 
 NUMBERS = ".0123456789"
 BLOCK_END = ")"
-BLOCKS = "Li@{TAU"
+BLOCK_STATEMENTS = "Li@{"
+BLOCK_EXPRRESSIONS = "(TAU"
 SINGLE_OPERATIONS = "#<dP"
 PREFIX_STATEMENTS = "CKptrS"
 PREFIX_EXPRESSIONS = "nN&|IXsoTEOY_`\"!\\aq"
@@ -28,9 +29,11 @@ class Parser(object):
         self.position = 0
 
     def push_block(self, block):
+        print "Pushing block"
         self.blocks.append(block)
 
     def pop_block(self):
+        print "Popping block"
         block = self.blocks.pop()
         if self.expressions:
             block.push(self.collapse_expressions())
@@ -143,7 +146,12 @@ class Parser(object):
                     raise ParserError("Infix operation in invalid location.")
                 e = self.expressions.pop()
                 self.push_to_tip(OPERATIONS[char](e))
-
+            elif char in BLOCK_STATEMENTS:
+                if self.expressions:
+                    self.push_to_block(self.collapse_expressions())
+                self.push_block(OPERATIONS[char]())
+            elif char in BLOCK_EXPRESSIONS:
+                self.push_to_tip(OPERATIONS[char]())
 
         if self.expressions:
             raise ParserError("Expressions remaining on the stack at termination.")

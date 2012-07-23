@@ -1,6 +1,6 @@
 from math import cos, sin
 
-from PIL import Image, ImageDraw
+from PIL import Image, ImageColor, ImageDraw
 
 
 class Transform(object):
@@ -40,13 +40,14 @@ class Canvas(object):
         self.image = Image.new("RGBA", (500, 500))
         self.transforms = []
         self.draw = ImageDraw.Draw(self.image)
-        self.color = ImageColor.getcolor("rgb(0, 0, 0)")
+        self.color = ImageColor.getcolor("rgb(0, 0, 0)", mode="RGB")
 
         self.last_point = 0, 0
         self.cursor = 0, 0
 
     def set_color(self, r, g, b, mode="rgb"):
-        self.color = ImageColor.getcolor("%s(%d, %d, %d)" % (mode, r, g, b))
+        self.color = ImageColor.getcolor("%s(%d, %d, %d)" % (mode, r, g, b),
+                                         mode=mode.upper())
 
     def set_cursor(self, x, y):
         self.cursor = x, y
