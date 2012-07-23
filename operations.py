@@ -1,3 +1,6 @@
+from functools import wraps
+
+
 OPERATIONS = {}
 def oper(name):
     def wrap(cls):
@@ -25,6 +28,34 @@ class Statement(Operation):
 class Expression(Operation):
     def has_return_value(self):
         return True
+
+
+class PrefixStatement(Statement):
+    def __init__(self):
+        self.body = None
+
+    def push(self, node):
+        self.body = node
+
+
+def expect_continuation(length=None):
+    def dec(f):
+        @wraps(f)
+        def wrap(self, context):
+            if not self.body:
+                raise Exception("Tuple not passed to prefix statement")
+            if not isinstance(self.body, Continuation):
+                raise Exception("Expected tuple, got non-tuple")
+
+            if length is not None:
+                if not isinstance(length, tuple):
+                    length = (length, )
+                if len(self.body.value) not in length:
+                    raise Exception("Tuple of invalid length")
+
+            return f(self, context)
+        return wrap
+    return dec
 
 
 class BlockOperation(Operation):
@@ -128,6 +159,73 @@ class NoParamStatement(Statement):
     pass
 
 
+@oper("#")
+class ClearMatStatement(NoParamStatement):
+    def run(self, context):
+        context.canvas.clear_transforms()
+
+
+@oper("<")
+class PopMatStatement(NoParamStatement):
+    def run(self, context):
+        context.canvas.pop()
+
+
+@oper("d")
+class DotStatement(NoParamStatement):
+    def run(self, context):
+        context.canvas.dot()
+
+
+@oper("P")
+class PathStatement(NoParamStatement):
+    def run(self, context):
+        context.canvas.line()
+
+
+@oper("C")
+class RGBStatement(PrefixStatement):
+    # TODO: This should support RGBA, as well.
+    @expect_continuation((3, 4))
+    def run(self, context):
+        mode = "rgba" if len(self.body) == 4 else "rgb"
+        context.canvas.set_color(mode=mode, *self.body.run())
+
+
+@oper("K")
+class CMYKStatement(PrefixStatement):
+    # TODO: This should support RGBA, as well.
+    @expect_continuation(4)
+    def run(self, context):
+        context.canvas.set_color(mode="cmyk", *self.body.run())
+
+
+@oper("p")
+class CursorStatement(PrefixStatement):
+    @expect_continuation(2)
+    def run(self, context):
+        context.canvas.set_cursor(*self.body.run())
+
+
+@oper("t")
+class TranslateStatement(PrefixStatement):
+    @expect_continuation(2)
+    def run(self, context):
+        context.canvas.translate(*self.body.run())
+
+
+@oper("r")
+class RotateStatement(PrefixStatement):
+    def run(self, context):
+        context.canvas.rotate(self.body.run())
+
+
+@oper("S")
+class ScaleStatement(PrefixStatement):
+    def run(self, context):
+        context.canvas.scale(*self.body.run())
+
+
 class InfixOperation(Expression):
     def __init__(self, left):
         self.left = left
@@ -152,7 +250,7 @@ class Continuation(InfixOperation):
         self.value.append(operation)
 
     def run(self, context):
-        return tuple(self.value)
+        return tuple(v.run() for v in self.value)
 
 
 class Literal(Operation):

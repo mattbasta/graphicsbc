@@ -1,0 +1,16 @@
+.DS_Store
+*.pyc
+tags
+TAGS
+*.swp
+*.egg-info
+.#*
+build
+dist
+*~
+.buildout
+.zsh/cache
+*.elc
+.virtualenvs
+.ipython
+*.stackdump

@@ -1,14 +1,29 @@
 import sys
 
-from parser import Parser
+from contexts import Context
+from parser import Parser, ParserError
 
 
 def main(f):
     with open(f) as file_:
         data = file_.read()
     p = Parser(data)
-    p.run()
+    try:
+        block = p.run()
+    except ParserError as e:
+        print "Block Stack:"
+        print "\n".join(map(repr, p.blocks))
+        print "\nExpressions:"
+        print "\n".join(map(repr, p.expressions))
+        print "\nBuffer: %s" % p.buffer
+        print "%s (at position %d)" % (e, p.position)
+        return
+
+    context = Context()
+    block.run(context)
+
+    context.save("out.png")
 
 
 if __name__ == "__main__":
-    main(sys.argv[0])
+    main(sys.argv[1])

@@ -100,6 +100,9 @@ Name         Symbol  Description
 Clear Mat    #       Clear the transformations on the cursor's matrix.
 Pop Mat      <       Pops the last transformation matrix from the top of the
                      stack.
+Dot          d       Draw a dot at the cursor.
+Path         P       Draw a solid line from the last location that any drawing
+                     occurred at to the current cursor position.
 ===========  ======  =========================================================
 
 
@@ -111,23 +114,18 @@ These operations may only be contained within a block.
 ===========  ======  ==========================================================
 Name         Symbol  Description
 ===========  ======  ==========================================================
-Color        c       Changes the active color to the color represented by the
-                     color specified in the parameter.
 RGB          C       Changes the active color to the RGB[A] color represented
                      by the three or four-tuple parameter.
 CMYK         K       Changes the active color to the CMYK color represented by
                      the four-tuple parameter.
 Cursor       p       Places the cursor at the two-tuple coordinates specified
                      by the parameter.
-Dot          d       Draw a dot at the cursor.
 Translate    t       Translate the matrix used by the cursor by the (x, y) two-
                      tuple specified by the parameter.
 Rotate       r       Rotate the matrix used by the cursor by R degrees where R
                      is the value specified by the parameter (in radians)
 Scale        S       Scale the matrix used by the cursor by the (x_scale,
                      y_scale) two-tuple specified by the parameter.
-Path         P       Draw a solid line from the last location that any drawing
-                     occurred at to the current cursor position.
 ===========  ======  ==========================================================
 
 Prefix - Expressions

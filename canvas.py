@@ -1,5 +1,7 @@
 from math import cos, sin
 
+from PIL import Image, ImageDraw
+
 
 class Transform(object):
     def get(self, x, y):
@@ -35,7 +37,25 @@ class ScaleTransform(Transform):
 class Canvas(object):
 
     def __init__(self):
+        self.image = Image.new("RGBA", (500, 500))
         self.transforms = []
+        self.draw = ImageDraw.Draw(self.image)
+        self.color = ImageColor.getcolor("rgb(0, 0, 0)")
+
+        self.last_point = 0, 0
+        self.cursor = 0, 0
+
+    def set_color(self, r, g, b, mode="rgb"):
+        self.color = ImageColor.getcolor("%s(%d, %d, %d)" % (mode, r, g, b))
+
+    def set_cursor(self, x, y):
+        self.cursor = x, y
+
+    def get_cursor(self, coords=None):
+        pos = coords or self.cursor
+        for t in self.transforms:
+            pos = t.get(*pos)
+        return pos
 
     def clear_transforms(self):
         self.transforms = []
@@ -51,4 +71,15 @@ class Canvas(object):
 
     def scale(self, x_scale, y_scale):
         self.transforms.append(ScaleTransform(x_scale, y_scale))
+
+    def dot(self):
+        cursor = self.get_cursor()
+        self.draw.point(cursor, color=self.color)
+        self.last_point = cursor
+
+    def line(self):
+        cursor = self.get_cursor()
+        self.draw.point([self.last_point, cursor],
+                        color=self.color)
+        self.last_point = cursor
 

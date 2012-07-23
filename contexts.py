@@ -1,9 +1,12 @@
+from canvas import Canvas
+
 
 class Context(object):
     def __init__(self):
         self.vars_ = {}
         self.funcs = {}
         self.counter = 0
+        self.canvas = Canvas()
 
     def _next_id(self):
         c = self.counter
