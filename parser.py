@@ -4,9 +4,9 @@ from operations import *
 NUMBERS = ".0123456789"
 BLOCK_END = ")"
 BLOCK_STATEMENTS = "Li@{"
-BLOCK_EXPRRESSIONS = "(TAU"
+BLOCK_EXPRESSIONS = "(TAU"
 SINGLE_OPERATIONS = "#<dP"
-PREFIX_STATEMENTS = "CKptrS"
+PREFIX_STATEMENTS = "CHKptrS"
 PREFIX_EXPRESSIONS = "nN&|IXsoTEOY_`\"!\\aq"
 INFIX_EXPRESSIONS = "+-*/^%~M>g=x"
 CONTINUATION = ","
@@ -140,17 +140,21 @@ class Parser(object):
                 print "Pushing %s to tip" % char
                 self.push_to_tip(OPERATIONS[char]())
             elif char in PREFIX_EXPRESSIONS:
+                print "Prefix expression", char
                 self.push_to_tip(OPERATIONS[char]())
             elif char in INFIX_EXPRESSIONS:
+                print "Infix expression", char
                 if not self.expressions:
                     raise ParserError("Infix operation in invalid location.")
                 e = self.expressions.pop()
                 self.push_to_tip(OPERATIONS[char](e))
             elif char in BLOCK_STATEMENTS:
+                print "Block Statement", char
                 if self.expressions:
                     self.push_to_block(self.collapse_expressions())
                 self.push_block(OPERATIONS[char]())
             elif char in BLOCK_EXPRESSIONS:
+                print "Block expression", char
                 self.push_to_tip(OPERATIONS[char]())
 
         if self.expressions:

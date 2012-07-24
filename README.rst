@@ -116,6 +116,8 @@ Name         Symbol  Description
 ===========  ======  ==========================================================
 RGB          C       Changes the active color to the RGB[A] color represented
                      by the three or four-tuple parameter.
+HSL          H       Changes the active color to the HSL[A] color represented
+                     by the three or four-tuple parameter.
 CMYK         K       Changes the active color to the CMYK color represented by
                      the four-tuple parameter.
 Cursor       p       Places the cursor at the two-tuple coordinates specified

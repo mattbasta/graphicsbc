@@ -1,3 +1,4 @@
+import colorsys
 import math
 from functools import wraps
 
@@ -42,11 +43,13 @@ class PrefixOperation(Statement):
 
 
 class PrefixStatement(PrefixOperation):
-    pass
+    def __repr__(self):
+        return "Statement(%s)>%s" % (self.name, self.body)
 
 
 class PrefixExpression(PrefixOperation):
-    pass
+    def __repr__(self):
+        return "Expression(%s)>%s" % (self.name, self.body)
 
 
 def expect_continuation(len_=None):
@@ -198,6 +201,7 @@ class SqRootOperation(PrefixExpression):
 
 @oper("a")
 class AssignOperation(PrefixExpression):
+    name = "Assignment"
     def run(self, context):
         out = self.body.run(context)
         if isinsatnce(out, tuple):
@@ -234,6 +238,7 @@ class CallOperation(PrefixExpression):
 
 
 class BlockOperation(Operation):
+    name = "Unknown Block"
     def __init__(self):
         self.body = []
 
@@ -244,8 +249,13 @@ class BlockOperation(Operation):
         for op in self.body:
             op.run(context)
 
+    def __repr__(self):
+        return "block(%s){%s}" % (self.name,
+                                  ",".join(map(repr, self.body)))
+
 
 class BlockExpression(Expression):
+    name = "Unknown Block Expression"
     def __init__(self):
         self.body = None
 
@@ -256,6 +266,10 @@ class BlockExpression(Expression):
         if self.body is not None:
             return self.body.run(context)
         return 0
+
+    def __repr__(self):
+        return "block(%s)<<{%s}" % (self.name,
+                                    ",".join(map(repr, self.body)))
 
 
 class FirstExprBlockOperation(BlockOperation):
@@ -269,9 +283,15 @@ class FirstExprBlockOperation(BlockOperation):
             return
         return super(FirstExprBlockOperation, self).push(operation)
 
+    def __repr__(self):
+        return "block(%s)<%s>{%s}" % (self.name,
+                                      self.first,
+                                      ",".join(map(repr, self.body)))
+
 
 @oper("L")
 class LoopBlock(FirstExprBlockOperation):
+    name = "Loop"
     def run(self, context):
         for i in range(self.first.run(context)):
             super(LoopBlock, self).run(context)
@@ -279,12 +299,14 @@ class LoopBlock(FirstExprBlockOperation):
 
 @oper("i")
 class ConditionalBlock(FirstExprBlockOperation):
+    name = "Conditional"
     def run(self, context):
         if self.first.run(context) != 0:
             super(ConditionalBlock, self).run(context)
 
 
 class ExecutableOperation(BlockOperation):
+    name = "Executable Block"
     def execute(self, context):
         for o in self.body:
             o.run(context)
@@ -292,12 +314,14 @@ class ExecutableOperation(BlockOperation):
 
 @oper("@")
 class LambdaBlock(ExecutableOperation):
+    name = "Lambda"
     def run(self, context):
         context.funcs[context._next_id()] = self
 
 
 @oper("{")
 class FunctionBlock(FirstExprBlockOperation, ExecutableOperation):
+    name = "Function"
     def run(self, context):
         id = self.first.run(context)
         if id in context.funcs:
@@ -307,6 +331,7 @@ class FunctionBlock(FirstExprBlockOperation, ExecutableOperation):
 
 @oper("T")
 class AnyBlock(BlockOperation):
+    name = "Any"
     def run(self, context):
         for op in self.body:
             out = op.run(context)
@@ -317,12 +342,14 @@ class AnyBlock(BlockOperation):
 
 @oper("A")
 class AllBlock(BlockOperation):
+    name = "All"
     def run(self, context):
         return 1 if all(o.run(context) for o in self.body) else 0
 
 
 @oper("U")
 class SumBlock(BlockOperation):
+    name = "Sum"
     def run(self, context):
         try:
             return sum(o.run(context) for o in self.body)
@@ -360,16 +387,29 @@ class PathStatement(NoParamStatement):
 
 @oper("C")
 class RGBStatement(PrefixStatement):
-    # TODO: This should support RGBA, as well.
+    name = "RGBA"
     @expect_continuation((3, 4))
     def run(self, context):
         mode = "rgba" if len(self.body) == 4 else "rgb"
         context.canvas.set_color(mode=mode, *self.body.run(context))
 
 
+@oper("H")
+class HSLStatement(PrefixStatement):
+    name = "HSLA"
+    @expect_continuation((3, 4))
+    def run(self, context):
+        values = self.body.run(context)
+        a = 255 if len(values) == 3 else values[3]
+        h, s, l = values[:2]
+        r, g, b = colorsys.hls_to_rgb(h, l, s)
+        values = r, g, b, a
+        context.canvas.set_color(mode="rgba", *values)
+
+
 @oper("K")
 class CMYKStatement(PrefixStatement):
-    # TODO: This should support RGBA, as well.
+    name = "CMYK"
     @expect_continuation(4)
     def run(self, context):
         context.canvas.set_color(mode="cmyk", *self.body.run(context))
@@ -377,6 +417,7 @@ class CMYKStatement(PrefixStatement):
 
 @oper("p")
 class CursorStatement(PrefixStatement):
+    name = "Cursor"
     @expect_continuation(2)
     def run(self, context):
         context.canvas.set_cursor(*self.body.run(context))
@@ -493,6 +534,9 @@ class Continuation(InfixOperation):
     def run(self, context):
         return tuple(v.run(context) for v in self.value)
 
+    def __repr__(self):
+        return "[%s]" % ",".join(map(repr, self.value))
+
 
 class Literal(Operation):
     def __init__(self, value):
@@ -504,3 +548,6 @@ class Literal(Operation):
 
     def run(self, context):
         return self.value
+
+    def __repr__(self):
+        return "[%d]" % self.value
