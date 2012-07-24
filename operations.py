@@ -1,6 +1,8 @@
 import math
 from functools import wraps
 
+import mpmath
+
 
 OPERATIONS = {}
 def oper(name):
@@ -31,12 +33,20 @@ class Expression(Operation):
         return True
 
 
-class PrefixStatement(Statement):
+class PrefixOperation(Statement):
     def __init__(self):
         self.body = None
 
     def push(self, node):
         self.body = node
+
+
+class PrefixStatement(PrefixOperation):
+    pass
+
+
+class PrefixExpression(PrefixOperation):
+    pass
 
 
 def expect_continuation(len_=None):
@@ -55,6 +65,172 @@ def expect_continuation(len_=None):
             return f(self, context)
         return wrap
     return dec
+
+
+@oper("n")
+class NegateOperation(PrefixExpression):
+    def run(self, context):
+        return self.body.run(context) * -1
+
+
+@oper("N")
+class NotOperation(PrefixExpression):
+    def run(self, context):
+        return self.body.run(context) == 0
+
+
+@oper("&")
+class AndOperation(PrefixExpression):
+    @expect_continuation(2)
+    def run(self, context):
+        left, right = self.body.value
+        return 0 if left.run(context) == 0 else right.run(context)
+
+
+@oper("|")
+class OrOperation(PrefixExpression):
+    @expect_continuation(2)
+    def run(self, context):
+        left, right = self.body.value
+        left = left.run(context)
+        return left if left != 0 else right.run(context)
+
+
+@oper("I")
+class IffOperation(PrefixExpression):
+    @expect_continuation(3)
+    def run(self, context):
+        condition, left, right = self.body.value
+        return left.run(context) if condition else right.run(context)
+
+
+@oper("X")
+class XOROperation(PrefixExpression):
+    @expect_continuation(2)
+    def run(self, context):
+        left, right = self.body.run(context)
+        left, right = bool(left), bool(right)
+        return left != right
+
+
+@oper("s")
+class SinOperation(PrefixExpression):
+    def run(self, context):
+        return math.sin(self.body.run(context))
+
+
+@oper("o")
+class CosOperation(PrefixExpression):
+    def run(self, context):
+        return math.cos(self.body.run(context))
+
+
+@oper("T")
+class TanOperation(PrefixExpression):
+    def run(self, context):
+        return math.tan(self.body.run(context))
+
+
+@oper("E")
+class SecOperation(PrefixExpression):
+    def run(self, context):
+        return mpmath.sec(self.body.run(context))
+
+
+@oper("O")
+class CscOperation(PrefixExpression):
+    def run(self, context):
+        return mpmath.csc(self.body.run(context))
+
+
+@oper("Y")
+class CotOperation(PrefixExpression):
+    def run(self, context):
+        return mpmath.cot(self.body.run(context))
+
+
+@oper("!")
+class TrigInverterOperation(PrefixExpression):
+    def run(self, context):
+        if isinstance(self.body, SinOperation):
+            return math.asin(self.body.body.run(context))
+        if isinstance(self.body, CosOperation):
+            return math.acos(self.body.body.run(context))
+        if isinstance(self.body, TanOperation):
+            return math.atan(self.body.body.run(context))
+        if isinstance(self.body, SecOperation):
+            return mpmath.asec(self.body.body.run(context))
+        if isinstance(self.body, CscOperation):
+            return mpmath.acsc(self.body.body.run(context))
+        if isinstance(self.body, CotOperation):
+            return mpmath.acot(self.body.body.run(context))
+
+        raise Exception("Unsupported inversion operation.")
+
+
+@oper("_")
+class FloorOperation(PrefixExpression):
+    def run(self, context):
+        return math.floor(self.body.run(context))
+
+
+@oper("`")
+class CeilOperation(PrefixExpression):
+    def run(self, context):
+        return math.ceil(self.body.run(context))
+
+
+@oper('"')
+class SquareOperation(PrefixExpression):
+    def run(self, context):
+        return self.body.run(context) ** 2
+
+
+@oper("\\")
+class SqRootOperation(PrefixExpression):
+    def run(self, context):
+        out = self.body.run(context)
+        if isinstance(out, tuple):
+            base, degree = out
+            return base ** (1 / degree)
+        return math.sqrt(out)
+
+
+@oper("a")
+class AssignOperation(PrefixExpression):
+    def run(self, context):
+        out = self.body.run(context)
+        if isinsatnce(out, tuple):
+            # An assignment
+            id_, value = out
+            context.vars_[id_] = value
+            return value
+
+        if out in context.vars_:
+            return context.vars_[out]
+        return 0
+
+
+@oper("q")
+class CallOperation(PrefixExpression):
+    @expect_continuation()
+    def run(self, context):
+        out = self.body.run(context)
+        func, args = out[0], out[1:]
+        if func not in context.funcs:
+            raise Exception("Function `%d` not yet defined." % func)
+
+        # Set up the arguments
+        args = enumerate(list(reversed(args)))
+        for idx, arg in args:
+            context.vars_[(idx + 1) * -1] = arg
+
+        out = 0
+        for op in context.funcs[func]:
+            out = op.run(context)
+        if out is None:
+            out = 0
+        return out
 
 
 class BlockOperation(Operation):
