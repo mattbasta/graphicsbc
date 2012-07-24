@@ -47,7 +47,7 @@ class PrefixStatement(PrefixOperation):
         return "Statement(%s)>%s" % (self.name, self.body)
 
 
-class PrefixExpression(PrefixOperation):
+class PrefixExpression(Expression, PrefixOperation):
     def __repr__(self):
         return "Expression(%s)>%s" % (self.name, self.body)
 
@@ -63,7 +63,8 @@ def expect_continuation(len_=None):
             if len_ is not None:
                 length = (len_, ) if not isinstance(len_, tuple) else len_
                 if len(self.body.value) not in length:
-                    raise Exception("Tuple of invalid length")
+                    raise Exception("Tuple of invalid length (%s got %d)" %
+                                        (length, len(self.body.value)))
 
             return f(self, context)
         return wrap
@@ -72,6 +73,7 @@ def expect_continuation(len_=None):
 
 @oper("n")
 class NegateOperation(PrefixExpression):
+    name = "Negate"
     def run(self, context):
         return self.body.run(context) * -1
 
@@ -204,7 +206,7 @@ class AssignOperation(PrefixExpression):
     name = "Assignment"
     def run(self, context):
         out = self.body.run(context)
-        if isinsatnce(out, tuple):
+        if isinstance(out, tuple):
             # An assignment
             id_, value = out
             context.vars_[id_] = value
@@ -401,10 +403,10 @@ class HSLStatement(PrefixStatement):
     def run(self, context):
         values = self.body.run(context)
         a = 255 if len(values) == 3 else values[3]
-        h, s, l = values[:2]
+        h, s, l = map(lambda x: float(x) / 255, values[:3])
         r, g, b = colorsys.hls_to_rgb(h, l, s)
-        values = r, g, b, a
-        context.canvas.set_color(mode="rgba", *values)
+        r, g, b = int(r * 255), int(g * 255), int(b * 255)
+        context.canvas.set_color(r, g, b, mode="rgb")
 
 
 @oper("K")
@@ -425,6 +427,7 @@ class CursorStatement(PrefixStatement):
 
 @oper("t")
 class TranslateStatement(PrefixStatement):
+    name = "Translate"
     @expect_continuation(2)
     def run(self, context):
         context.canvas.translate(*self.body.run(context))
@@ -432,12 +435,14 @@ class TranslateStatement(PrefixStatement):
 
 @oper("r")
 class RotateStatement(PrefixStatement):
+    name = "Rotate"
     def run(self, context):
         context.canvas.rotate(self.body.run(context))
 
 
 @oper("S")
 class ScaleStatement(PrefixStatement):
+    name = "Scale"
     def run(self, context):
         context.canvas.scale(*self.body.run(context))
 

@@ -56,9 +56,12 @@ class Canvas(object):
         self.last_point = 0, 0
         self.cursor = 0, 0
 
-    def set_color(self, r, g, b, mode="rgb"):
-        self.color = ImageColor.getcolor("%s(%d, %d, %d)" % (mode, r, g, b),
+    def set_color(self, r, g, b, a=255, mode="rgb"):
+        rgba = r, g, b
+        rgba = map(str, rgba)
+        self.color = ImageColor.getcolor("%s(%s)" % (mode, ", ".join(rgba)),
                                          mode=mode.upper())
+        print "Color:", self.color
 
     def set_cursor(self, x, y):
         self.cursor = x, y
@@ -98,7 +101,6 @@ class Canvas(object):
 
     def dot(self):
         cursor = self.get_cursor()
-        print cursor, self.color
         self.draw.point(cursor, fill=self.color)
         self.last_point = cursor
 
@@ -106,7 +108,6 @@ class Canvas(object):
         cursor = self.get_cursor()
         self.draw.line([self.last_point, cursor],
                        fill=self.color)
-        print "Drew from", self.last_point, "to", cursor
         self.last_point = cursor
 
     def save(self, path):

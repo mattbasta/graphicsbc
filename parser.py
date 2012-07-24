@@ -49,9 +49,8 @@ class Parser(object):
         if self.expressions:
             e = self.expressions[-1]
             if isinstance(e, Literal):
-                raise ParserError("Cannot push literal to literal")
-            if isinstance(e, Continuation):
-                print "Pushed expression to continuation"
+                raise ParserError("Cannot push expression to literal")
+            if isinstance(node, Literal) and isinstance(e, Continuation):
                 e.push(node)
                 return
         self.expressions.append(node)
@@ -88,7 +87,7 @@ class Parser(object):
                 if not (issubclass(type(e), Literal) or
                         issubclass(type(e), Expression)):
                     raise ParserError("Continuation against non-expressive "
-                                      "value.")
+                                      "value (%s)." % e)
                 c = Continuation(e)
                 self.push_to_tip(c)
                 continue
@@ -124,13 +123,17 @@ class Parser(object):
                 if self.expressions:
                     print "Dealing with whitespace in an expression"
                     e = self.expressions.pop()
+                    print "  ", e
                     if isinstance(e, Continuation):
+                        print "  Continuation"
                         self.expressions[-1].push(e)
                         e = self.expressions.pop()
 
                     if self.expressions:
+                        print "  Pushing to expression", self.expressions[-1]
                         self.expressions[-1].push(e)
                     else:
+                        print "  Pushing to block"
                         self.push_to_block(e)
                 continue
 
