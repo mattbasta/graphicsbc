@@ -15,6 +15,10 @@ class TranslateTransform(Transform):
     def get(self, x, y):
         return x + self.x, y + self.y
 
+    def update(self, x, y):
+        self.x += x
+        self.y += y
+
 
 class RotateTransform(Transform):
     def __init__(self, theta):
@@ -25,6 +29,9 @@ class RotateTransform(Transform):
         return (x * cos(theta) - y * sin(theta),
                 y * cos(theta) + x * sin(theta))
 
+    def update(self, theta):
+        self.theta += theta
+
 
 class ScaleTransform(Transform):
     def __init__(self, x_scale, y_scale):
@@ -32,6 +39,10 @@ class ScaleTransform(Transform):
 
     def get(self, x, y):
         return x * self.x, y * self.y
+
+    def update(self, x, y):
+        self.x += x
+        self.y += y
 
 
 class Canvas(object):
@@ -51,12 +62,14 @@ class Canvas(object):
 
     def set_cursor(self, x, y):
         self.cursor = x, y
+        print "Moved cursor to", self.cursor
 
     def get_cursor(self, coords=None):
-        pos = coords or self.cursor
+        pos = 0, 0
         for t in self.transforms:
             pos = t.get(*pos)
-        return pos
+        cur_pos = coords or self.cursor
+        return pos[0] + cur_pos[0], pos[1] + cur_pos[0]
 
     def clear_transforms(self):
         self.transforms = []
@@ -65,22 +78,37 @@ class Canvas(object):
         self.transforms.pop()
 
     def translate(self, x, y):
+        if self.transforms and isinstance(self.transforms[-1],
+                                          TranslateTransform):
+            self.transforms[-1].update(x, y)
+            return
         self.transforms.append(TranslateTransform(x, y))
 
     def rotate(self, theta):
+        if self.transforms and isinstance(self.transforms[-1], RotateTransform):
+            self.transforms[-1].update(theta)
+            return
         self.transforms.append(RotateTransform(theta))
 
     def scale(self, x_scale, y_scale):
+        if self.transforms and isinstance(self.transforms[-1], ScaleTransform):
+            self.transforms[-1].update(x_scale, y_scale)
+            return
         self.transforms.append(ScaleTransform(x_scale, y_scale))
 
     def dot(self):
         cursor = self.get_cursor()
-        self.draw.point(cursor, color=self.color)
+        print cursor, self.color
+        self.draw.point(cursor, fill=self.color)
         self.last_point = cursor
 
     def line(self):
         cursor = self.get_cursor()
-        self.draw.point([self.last_point, cursor],
-                        color=self.color)
+        self.draw.line([self.last_point, cursor],
+                       fill=self.color)
+        print "Drew from", self.last_point, "to", cursor
         self.last_point = cursor
+
+    def save(self, path):
+        self.image.save(path)
 

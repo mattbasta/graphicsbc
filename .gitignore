@@ -14,3 +14,4 @@ dist
 .virtualenvs
 .ipython
 *.stackdump
+out.png

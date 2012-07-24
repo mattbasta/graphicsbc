@@ -22,7 +22,8 @@ def main(f):
     context = Context()
     block.run(context)
 
-    context.save("out.png")
+    output = sys.argv[2] if len(sys.argv) >= 3 else "/tmp/out.png"
+    context.canvas.save(output)
 
 
 if __name__ == "__main__":

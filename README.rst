@@ -189,7 +189,6 @@ Div          /       x / y
 Pow          ^       x ** y
 Mod          %       x % y
 Int Div      ~       floor(x / y)
-Powmod       M       powmod(x, y)
 Greater      >       x > y
 Greater/Eq   g       x >= y
 Equal        =       x == y

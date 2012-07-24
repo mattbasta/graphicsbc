@@ -1,3 +1,4 @@
+import math
 from functools import wraps
 
 
@@ -38,18 +39,16 @@ class PrefixStatement(Statement):
         self.body = node
 
 
-def expect_continuation(length=None):
+def expect_continuation(len_=None):
     def dec(f):
-        @wraps(f)
         def wrap(self, context):
             if not self.body:
                 raise Exception("Tuple not passed to prefix statement")
             if not isinstance(self.body, Continuation):
                 raise Exception("Expected tuple, got non-tuple")
 
-            if length is not None:
-                if not isinstance(length, tuple):
-                    length = (length, )
+            if len_ is not None:
+                length = (len_, ) if not isinstance(len_, tuple) else len_
                 if len(self.body.value) not in length:
                     raise Exception("Tuple of invalid length")
 
@@ -99,7 +98,7 @@ class FirstExprBlockOperation(BlockOperation):
 class LoopBlock(FirstExprBlockOperation):
     def run(self, context):
         for i in range(self.first.run(context)):
-            super(ConditionalBlock, self).run(context)
+            super(LoopBlock, self).run(context)
 
 
 @oper("i")
@@ -189,7 +188,7 @@ class RGBStatement(PrefixStatement):
     @expect_continuation((3, 4))
     def run(self, context):
         mode = "rgba" if len(self.body) == 4 else "rgb"
-        context.canvas.set_color(mode=mode, *self.body.run())
+        context.canvas.set_color(mode=mode, *self.body.run(context))
 
 
 @oper("K")
@@ -197,33 +196,33 @@ class CMYKStatement(PrefixStatement):
     # TODO: This should support RGBA, as well.
     @expect_continuation(4)
     def run(self, context):
-        context.canvas.set_color(mode="cmyk", *self.body.run())
+        context.canvas.set_color(mode="cmyk", *self.body.run(context))
 
 
 @oper("p")
 class CursorStatement(PrefixStatement):
     @expect_continuation(2)
     def run(self, context):
-        context.canvas.set_cursor(*self.body.run())
+        context.canvas.set_cursor(*self.body.run(context))
 
 
 @oper("t")
 class TranslateStatement(PrefixStatement):
     @expect_continuation(2)
     def run(self, context):
-        context.canvas.translate(*self.body.run())
+        context.canvas.translate(*self.body.run(context))
 
 
 @oper("r")
 class RotateStatement(PrefixStatement):
     def run(self, context):
-        context.canvas.rotate(self.body.run())
+        context.canvas.rotate(self.body.run(context))
 
 
 @oper("S")
 class ScaleStatement(PrefixStatement):
     def run(self, context):
-        context.canvas.scale(*self.body.run())
+        context.canvas.scale(*self.body.run(context))
 
 
 class InfixOperation(Expression):
@@ -233,6 +232,72 @@ class InfixOperation(Expression):
 
     def push(self, operation):
         self.right = operation
+
+
+@oper("+")
+class PlusOperation(InfixOperation):
+    def run(self, context):
+        return self.left.run(context) + self.right.run(context)
+
+
+@oper("*")
+class MultOperation(InfixOperation):
+    def run(self, context):
+        return self.left.run(context) * self.right.run(context)
+
+
+@oper("/")
+class DivOperation(InfixOperation):
+    def run(self, context):
+        return self.left.run(context) / self.right.run(context)
+
+
+@oper("-")
+class SubOperation(InfixOperation):
+    def run(self, context):
+        return self.left.run(context) - self.right.run(context)
+
+
+@oper("%")
+class ModOperation(InfixOperation):
+    def run(self, context):
+        return self.left.run(context) % self.right.run(context)
+
+
+@oper("^")
+class PowOperation(InfixOperation):
+    def run(self, context):
+        return self.left.run(context) ** self.right.run(context)
+
+
+@oper("~")
+class IntDivOperation(InfixOperation):
+    def run(self, context):
+        return math.floor(self.left.run(context) / self.right.run(context))
+
+
+@oper(">")
+class GTOperation(InfixOperation):
+    def run(self, context):
+        return self.left.run(context) > self.right.run(context)
+
+
+@oper("g")
+class GTOperation(InfixOperation):
+    def run(self, context):
+        return self.left.run(context) >= self.right.run(context)
+
+
+@oper("=")
+class GTOperation(InfixOperation):
+    def run(self, context):
+        return self.left.run(context) == self.right.run(context)
+
+
+@oper("x")
+class GTOperation(InfixOperation):
+    def run(self, context):
+        return self.left.run(context) != self.right.run(context)
 
 
 @oper(",")
@@ -250,11 +315,15 @@ class Continuation(InfixOperation):
         self.value.append(operation)
 
     def run(self, context):
-        return tuple(v.run() for v in self.value)
+        return tuple(v.run(context) for v in self.value)
 
 
 class Literal(Operation):
     def __init__(self, value):
+        if "." in value:
+            value = float(value)
+        else:
+            value = int(value)
         self.value = value
 
     def run(self, context):
