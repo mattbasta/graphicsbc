@@ -6,7 +6,9 @@ from parser import Parser, ParserError
 
 def main(f):
     with open(f) as file_:
-        data = file_.read()
+        return run(file_.read())
+
+def run(data):
     p = Parser(data)
     try:
         block = p.run()
@@ -22,9 +24,11 @@ def main(f):
     context = Context()
     block.run(context)
 
-    output = sys.argv[2] if len(sys.argv) >= 3 else "/tmp/out.png"
-    context.canvas.save(output)
+    return context
 
 
 if __name__ == "__main__":
-    main(sys.argv[1])
+    context = main(sys.argv[1])
+    output = sys.argv[2] if len(sys.argv) >= 3 else "/tmp/out.png"
+    context.canvas.save(output)
+
