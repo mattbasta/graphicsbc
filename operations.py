@@ -80,12 +80,14 @@ class NegateOperation(PrefixExpression):
 
 @oper("N")
 class NotOperation(PrefixExpression):
+    name = "Not"
     def run(self, context):
         return self.body.run(context) == 0
 
 
 @oper("&")
 class AndOperation(PrefixExpression):
+    name = "And"
     @expect_continuation(2)
     def run(self, context):
         left, right = self.body.value
@@ -94,6 +96,7 @@ class AndOperation(PrefixExpression):
 
 @oper("|")
 class OrOperation(PrefixExpression):
+    name = "Or"
     @expect_continuation(2)
     def run(self, context):
         left, right = self.body.value
@@ -103,6 +106,7 @@ class OrOperation(PrefixExpression):
 
 @oper("I")
 class IffOperation(PrefixExpression):
+    name = "Iff"
     @expect_continuation(3)
     def run(self, context):
         condition, left, right = self.body.value
@@ -111,6 +115,7 @@ class IffOperation(PrefixExpression):
 
 @oper("X")
 class XOROperation(PrefixExpression):
+    name = "XOR"
     @expect_continuation(2)
     def run(self, context):
         left, right = self.body.run(context)
@@ -120,42 +125,49 @@ class XOROperation(PrefixExpression):
 
 @oper("s")
 class SinOperation(PrefixExpression):
+    name = "Sin"
     def run(self, context):
         return math.sin(self.body.run(context))
 
 
 @oper("o")
 class CosOperation(PrefixExpression):
+    name = "Cos"
     def run(self, context):
         return math.cos(self.body.run(context))
 
 
 @oper("T")
 class TanOperation(PrefixExpression):
+    name = "Tan"
     def run(self, context):
         return math.tan(self.body.run(context))
 
 
 @oper("E")
 class SecOperation(PrefixExpression):
+    name = "Sec"
     def run(self, context):
         return mpmath.sec(self.body.run(context))
 
 
 @oper("O")
 class CscOperation(PrefixExpression):
+    name = "Csc"
     def run(self, context):
         return mpmath.csc(self.body.run(context))
 
 
 @oper("Y")
 class CotOperation(PrefixExpression):
+    name = "Cot"
     def run(self, context):
         return mpmath.cot(self.body.run(context))
 
 
 @oper("!")
 class TrigInverterOperation(PrefixExpression):
+    name = "Inv"
     def run(self, context):
         if isinstance(self.body, SinOperation):
             return math.asin(self.body.body.run(context))
@@ -175,24 +187,28 @@ class TrigInverterOperation(PrefixExpression):
 
 @oper("_")
 class FloorOperation(PrefixExpression):
+    name = "Floor"
     def run(self, context):
         return math.floor(self.body.run(context))
 
 
 @oper("`")
 class CeilOperation(PrefixExpression):
+    name = "Ceil"
     def run(self, context):
         return math.ceil(self.body.run(context))
 
 
 @oper('"')
 class SquareOperation(PrefixExpression):
+    name = "Square"
     def run(self, context):
         return self.body.run(context) ** 2
 
 
 @oper("\\")
 class SqRootOperation(PrefixExpression):
+    name = "Sqrt"
     def run(self, context):
         out = self.body.run(context)
         if isinstance(out, tuple):
@@ -219,6 +235,7 @@ class AssignOperation(PrefixExpression):
 
 @oper("q")
 class CallOperation(PrefixExpression):
+    name = "Call"
     @expect_continuation()
     def run(self, context):
         out = self.body.run(context)
