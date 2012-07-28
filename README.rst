@@ -103,6 +103,7 @@ Pop Mat      <       Pops the last transformation matrix from the top of the
 Dot          d       Draw a dot at the cursor.
 Path         P       Draw a solid line from the last location that any drawing
                      occurred at to the current cursor position.
+Break        ;       Breaks out of the current loop block.
 ===========  ======  =========================================================
 
 

@@ -1,6 +1,7 @@
 import sys
 
 from contexts import Context
+from operations import BreakInterrupt
 from parser import Parser, ParserError
 
 
@@ -12,6 +13,8 @@ def run(data):
     p = Parser(data)
     try:
         block = p.run()
+    except BreakInterrupt:
+        print "Break called outside loop"
     except ParserError as e:
         print "Block Stack:"
         print "\n".join(map(repr, p.blocks))

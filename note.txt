@@ -1,0 +1,21 @@
+Pushing H to tip
+Prefix expression a
+Flushing buffer: 0
+Dealing with whitespace in an expression
+   [0]
+  Pushing to expression Expression(Assignment)>None
+Popping expression for continuation
+Prefix expression a
+Flushing buffer: 1
+Dealing with whitespace in an expression
+   [1]
+  Pushing to expression Expression(Assignment)>None
+Popping expression for continuation
+Flushing buffer: 127
+Dealing with whitespace in an expression
+   [Expression(Assignment)>[1],[127]]
+  Continuation
+  Pushing to expression Statement(HSLA)>None
+Collapsing expressions
+Popping block
+

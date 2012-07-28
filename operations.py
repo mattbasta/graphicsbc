@@ -5,6 +5,10 @@ from functools import wraps
 import mpmath
 
 
+class BreakInterrupt(StandardError):
+    pass
+
+
 OPERATIONS = {}
 def oper(name):
     def wrap(cls):
@@ -63,6 +67,7 @@ def expect_continuation(len_=None):
             if len_ is not None:
                 length = (len_, ) if not isinstance(len_, tuple) else len_
                 if len(self.body.value) not in length:
+                    print self.body.value
                     raise Exception("Tuple of invalid length (%s got %d)" %
                                         (length, len(self.body.value)))
 
@@ -236,10 +241,12 @@ class AssignOperation(PrefixExpression):
 @oper("q")
 class CallOperation(PrefixExpression):
     name = "Call"
-    @expect_continuation()
     def run(self, context):
         out = self.body.run(context)
-        func, args = out[0], out[1:]
+        if isinstance(out, tuple):
+            func, args = out[0], out[1:]
+        else:
+            func, args = out, []
         if func not in context.funcs:
             raise Exception("Function `%d` not yet defined." % func)
 
@@ -249,7 +256,7 @@ class CallOperation(PrefixExpression):
             context.vars_[(idx + 1) * -1] = arg
 
         out = 0
-        for op in context.funcs[func]:
+        for op in context.funcs[func].body:
             out = op.run(context)
         if out is None:
             out = 0
@@ -312,8 +319,11 @@ class FirstExprBlockOperation(BlockOperation):
 class LoopBlock(FirstExprBlockOperation):
     name = "Loop"
     def run(self, context):
-        for i in range(self.first.run(context)):
-            super(LoopBlock, self).run(context)
+        try:
+            for i in range(self.first.run(context)):
+                super(LoopBlock, self).run(context)
+        except BreakInterrupt:
+            pass
 
 
 @oper("i")
@@ -380,6 +390,12 @@ class NoParamStatement(Statement):
     pass
 
 
+@oper(";")
+class BreakStatement(NoParamStatement):
+    def run(self, context):
+        raise BreakInterrupt()
+
+
 @oper("#")
 class ClearMatStatement(NoParamStatement):
     def run(self, context):
@@ -420,6 +436,7 @@ class HSLStatement(PrefixStatement):
     def run(self, context):
         values = self.body.run(context)
         a = 255 if len(values) == 3 else values[3]
+        print values[:3]
         h, s, l = map(lambda x: float(x) / 255, values[:3])
         r, g, b = colorsys.hls_to_rgb(h, l, s)
         r, g, b = int(r * 255), int(g * 255), int(b * 255)
@@ -465,6 +482,7 @@ class ScaleStatement(PrefixStatement):
 
 
 class InfixOperation(Expression):
+    name = "Generic Infix Operation"
     def __init__(self, left):
         self.left = left
         self.right = None
