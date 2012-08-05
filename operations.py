@@ -67,7 +67,6 @@ def expect_continuation(len_=None):
             if len_ is not None:
                 length = (len_, ) if not isinstance(len_, tuple) else len_
                 if len(self.body.value) not in length:
-                    print self.body.value
                     raise Exception("Tuple of invalid length (%s got %d)" %
                                         (length, len(self.body.value)))
 
@@ -231,6 +230,7 @@ class AssignOperation(PrefixExpression):
             # An assignment
             id_, value = out
             context.vars_[id_] = value
+            #print "%d = %s" % out
             return value
 
         if out in context.vars_:
@@ -425,8 +425,9 @@ class RGBStatement(PrefixStatement):
     name = "RGBA"
     @expect_continuation((3, 4))
     def run(self, context):
-        mode = "rgba" if len(self.body) == 4 else "rgb"
-        context.canvas.set_color(mode=mode, *self.body.run(context))
+        body = self.body.run(context)
+        mode = "rgba" if len(body) == 4 else "rgb"
+        context.canvas.set_color(mode=mode, *body)
 
 
 @oper("H")
@@ -490,71 +491,78 @@ class InfixOperation(Expression):
     def push(self, operation):
         self.right = operation
 
+    def run(self, context):
+        left, right = self.left.run(context), self.right.run(context)
+        return self._run(left, right)
+
+    def __repr__(self):
+        return "(%s %s %s)" % (repr(self.left), str(type(self)), repr(self.right))
+
 
 @oper("+")
 class PlusOperation(InfixOperation):
-    def run(self, context):
-        return self.left.run(context) + self.right.run(context)
+    def _run(self, left, right):
+        return left + right
 
 
 @oper("*")
 class MultOperation(InfixOperation):
-    def run(self, context):
-        return self.left.run(context) * self.right.run(context)
+    def _run(self, left, right):
+        return left * right
 
 
 @oper("/")
 class DivOperation(InfixOperation):
-    def run(self, context):
-        return self.left.run(context) / self.right.run(context)
+    def _run(self, left, right):
+        return left / right
 
 
 @oper("-")
 class SubOperation(InfixOperation):
-    def run(self, context):
-        return self.left.run(context) - self.right.run(context)
+    def _run(self, left, right):
+        return left - right
 
 
 @oper("%")
 class ModOperation(InfixOperation):
-    def run(self, context):
-        return self.left.run(context) % self.right.run(context)
+    def _run(self, left, right):
+        return left % right
 
 
 @oper("^")
 class PowOperation(InfixOperation):
-    def run(self, context):
-        return self.left.run(context) ** self.right.run(context)
+    def _run(self, left, right):
+        return left ** right
 
 
 @oper("~")
 class IntDivOperation(InfixOperation):
-    def run(self, context):
-        return math.floor(self.left.run(context) / self.right.run(context))
+    def _run(self, left, right):
+        return math.floor(left / right)
 
 
 @oper(">")
 class GTOperation(InfixOperation):
-    def run(self, context):
-        return self.left.run(context) > self.right.run(context)
+    def _run(self, left, right):
+        return left > right
 
 
 @oper("g")
 class GTOperation(InfixOperation):
-    def run(self, context):
-        return self.left.run(context) >= self.right.run(context)
+    def _run(self, left, right):
+        return left >= right
 
 
 @oper("=")
 class GTOperation(InfixOperation):
-    def run(self, context):
-        return self.left.run(context) == self.right.run(context)
+    def _run(self, left, right):
+        return left == right
 
 
 @oper("x")
 class GTOperation(InfixOperation):
-    def run(self, context):
-        return self.left.run(context) != self.right.run(context)
+    def _run(self, left, right):
+        return left != right
 
 
 @oper(",")

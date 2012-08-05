@@ -61,11 +61,11 @@ class Canvas(object):
         rgba = map(str, rgba)
         self.color = ImageColor.getcolor("%s(%s)" % (mode, ", ".join(rgba)),
                                          mode=mode.upper())
-        print "Color:", self.color
+        #print "Color:", self.color
 
     def set_cursor(self, x, y):
         self.cursor = x, y
-        print "Moved cursor to", self.cursor
+        #print "Moved cursor to", self.cursor
 
     def get_cursor(self, coords=None):
         pos = 0, 0

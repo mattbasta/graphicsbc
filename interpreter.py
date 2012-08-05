@@ -24,6 +24,8 @@ def run(data):
         print "%s (at position %d)" % (e, p.position)
         return
 
+    print block
+
     context = Context()
     block.run(context)
 

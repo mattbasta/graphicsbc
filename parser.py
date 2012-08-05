@@ -50,7 +50,8 @@ class Parser(object):
             e = self.expressions[-1]
             if isinstance(e, Literal):
                 raise ParserError("Cannot push expression to literal")
-            if isinstance(node, Literal) and isinstance(e, Continuation):
+            if (isinstance(node, Literal) and
+                isinstance(e, (Continuation, InfixOperation))):
                 e.push(node)
                 return
         self.expressions.append(node)
@@ -131,7 +132,14 @@ class Parser(object):
 
                     if self.expressions:
                         print "  Pushing to expression", self.expressions[-1]
-                        self.expressions[-1].push(e)
+                        last_exp = self.expressions[-1]
+                        last_exp.push(e)
+                        try:
+                            next_last = self.expressions[-2]
+                            if isinstance(next_last, Continuation):
+                                next_last.push(self.expressions.pop())
+                        except IndexError:
+                            pass
                     else:
                         print "  Pushing to block"
                         self.push_to_block(e)
@@ -150,7 +158,12 @@ class Parser(object):
                 if not self.expressions:
                     raise ParserError("Infix operation in invalid location.")
                 e = self.expressions.pop()
-                self.push_to_tip(OPERATIONS[char](e))
+                if isinstance(e, Continuation):
+                    last = e.value.pop()
+                    self.expressions.append(e)
+                    self.push_to_tip(OPERATIONS[char](last))
+                else:
+                    self.push_to_tip(OPERATIONS[char](e))
             elif char in BLOCK_STATEMENTS:
                 print "Block Statement", char
                 if self.expressions:
