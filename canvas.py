@@ -112,4 +112,3 @@ class Canvas(object):
 
     def save(self, path):
         self.image.save(path)
-

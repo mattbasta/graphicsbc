@@ -114,7 +114,7 @@ class IffOperation(PrefixExpression):
     @expect_continuation(3)
     def run(self, context):
         condition, left, right = self.body.value
-        return left.run(context) if condition else right.run(context)
+        return left.run(context) if condition.run(context) else right.run(context)
 
 
 @oper("X")
@@ -294,8 +294,7 @@ class BlockExpression(Expression):
         return 0
 
     def __repr__(self):
-        return "block(%s)<<{%s}" % (self.name,
-                                    ",".join(map(repr, self.body)))
+        return "block(%s)<<{%s}" % (self.name, repr(self.body))
 
 
 class FirstExprBlockOperation(BlockOperation):
@@ -311,7 +310,7 @@ class FirstExprBlockOperation(BlockOperation):
 
     def __repr__(self):
         return "block(%s)<%s>{%s}" % (self.name,
-                                      self.first,
+                                      repr(self.first),
                                       ",".join(map(repr, self.body)))
 
 
@@ -341,21 +340,11 @@ class ExecutableOperation(BlockOperation):
             o.run(context)
 
 
-@oper("@")
-class LambdaBlock(ExecutableOperation):
-    name = "Lambda"
-    def run(self, context):
-        context.funcs[context._next_id()] = self
-
-
 @oper("{")
 class FunctionBlock(FirstExprBlockOperation, ExecutableOperation):
     name = "Function"
     def run(self, context):
-        id = self.first.run(context)
-        if id in context.funcs:
-            raise Exception("Function %d already defined" % id)
-        context.funcs[id] = self
+        context.funcs[self.first.run(context)] = self
 
 
 @oper("T")
@@ -444,14 +433,6 @@ class HSLStatement(PrefixStatement):
         context.canvas.set_color(r, g, b, mode="rgb")
 
 
-@oper("K")
-class CMYKStatement(PrefixStatement):
-    name = "CMYK"
-    @expect_continuation(4)
-    def run(self, context):
-        context.canvas.set_color(mode="cmyk", *self.body.run(context))
-
-
 @oper("p")
 class CursorStatement(PrefixStatement):
     name = "Cursor"
@@ -535,12 +516,6 @@ class PowOperation(InfixOperation):
         return left ** right
 
 
-@oper("~")
-class IntDivOperation(InfixOperation):
-    def _run(self, left, right):
-        return math.floor(left / right)
-
-
 @oper(">")
 class GTOperation(InfixOperation):
     def _run(self, left, right):
@@ -548,7 +523,7 @@ class GTOperation(InfixOperation):
 
 
 @oper("g")
-class GTOperation(InfixOperation):
+class GTEOperation(InfixOperation):
     def _run(self, left, right):
         return left >= right
 
@@ -560,7 +535,7 @@ class GTOperation(InfixOperation):
 
 
 @oper("x")
-class GTOperation(InfixOperation):
+class DNEOperation(InfixOperation):
     def _run(self, left, right):
         return left != right
 

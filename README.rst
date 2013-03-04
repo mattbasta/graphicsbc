@@ -71,9 +71,6 @@ Loop       L..)    The bytecode within the block is executed N times where N
 If         i..)    The bytecode within the block is only executed if the number
                    returned by the first expression within the block is not
                    zero.
-Lambda     @..)    The bytecode within the block is executed when the ID
-                   returned by the block is called by the `q` operation.
-                   Arguments are placed in variables -1 through -infinity.
 Function   {..)    The bytecode within the block is executed when the ID
                    provided by the number returned by the first expression
                    within the block is called by the `q` operation. Arguments
@@ -119,8 +116,6 @@ RGB          C       Changes the active color to the RGB[A] color represented
                      by the three or four-tuple parameter.
 HSL          H       Changes the active color to the HSL[A] color represented
                      by the three or four-tuple parameter.
-CMYK         K       Changes the active color to the CMYK color represented by
-                     the four-tuple parameter.
 Cursor       p       Places the cursor at the two-tuple coordinates specified
                      by the parameter.
 Translate    t       Translate the matrix used by the cursor by the (x, y) two-
@@ -191,7 +186,6 @@ Mult         \*      x * y
 Div          /       x / y
 Pow          ^       x ** y
 Mod          %       x % y
-Int Div      ~       floor(x / y)
 Greater      >       x > y
 Greater/Eq   g       x >= y
 Equal        =       x == y
