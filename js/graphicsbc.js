@@ -1038,7 +1038,7 @@ var gbc = (function() {
         this.scratch = [];
 
         this.canvas.strokeStyle = "black";
-        this.canvas.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        this.canvas.clearRect(0, 0, canvas.width, canvas.height);
     }
     CanvasWrap.prototype = {
         canvas: null,
