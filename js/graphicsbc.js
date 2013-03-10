@@ -1189,8 +1189,27 @@ var gbc = (function() {
             }
         }
 
-        if (expressions.length)
-            throw new Error("Expressions remaining on the stack at termination.");
+        if (expressions.length) {
+            console.log('Cleaning up stack...');
+        }
+        while (expressions.length) {
+            e = expressions.pop();
+            if (e instanceof Continuation) {
+                expressions[expressions.length - 1].push(e);
+                e = expressions.pop();
+            }
+
+            if (expressions.length) {
+                var last_exp = expressions[expressions.length - 1];
+                last_exp.push(e);
+                var next_last = expressions[expressions.length - 2];
+                if (next_last instanceof Continuation) {
+                    next_last.push(expressions.pop());
+                }
+            } else {
+                push_to_block(e);
+            }
+        }
 
         var body = blocks.pop();
         if (blocks.length)
@@ -1363,6 +1382,7 @@ var gbc = (function() {
         var out = 'return function(canvas) {\n';
         out += 'var id;\n';
         out += 'var context = {};\n';
+        out += 'var functions = {};\n';
 
         tree = tree.optimize();
         out += tree.compile();
