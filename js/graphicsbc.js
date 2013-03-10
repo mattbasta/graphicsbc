@@ -1378,12 +1378,20 @@ var gbc = (function() {
         var out = 'return function(canvas) {\n';
         out += 'var id;\n';
         out += 'var context = {};\n';
-        out += 'var functions = {};\n';
-        out += 'function use_func(n) {if (!(n in functions)) {throw new Error(n + " not yet defined");}return n;}\n';
-        out += 'function fill_args(args) {for (var i = 0; i < args.length; i++) {context[~i] = args[i];}}\n';
 
         tree = tree.optimize();
-        out += tree.compile();
+        var compiled = tree.compile();
+
+        if (compiled.indexOf('functions') !== -1) {
+            out += 'var functions = {};\n';
+        }
+        if (compiled.indexOf('use_func') !== -1) {
+            out += 'function use_func(n) {if (!(n in functions)) {throw new Error(n + " not yet defined");}return n;}\n';
+        }
+        if (compiled.indexOf('fill_args') !== -1) {
+            out += 'function fill_args(args) {for (var i = 0; i < args.length; i++) {context[~i] = args[i];}}\n';
+        }
+        out += compiled;
 
         out += '}';
         console.log(out);
