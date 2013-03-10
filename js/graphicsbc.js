@@ -4,9 +4,6 @@ var gbc = (function() {
 
     var operations = {};
 
-    var return_true = function() {return true;};
-    var return_false = function() {return false;};
-
     function _in(haystack, needle) {
         if (typeof haystack === "string") {
             return haystack.indexOf(needle) > -1;
@@ -40,14 +37,18 @@ var gbc = (function() {
 
     function literal(value) {
         var out;
-        if (_in(value, "."))
-            out = parseFloat(value);
-        else
-            out = parseInt(value, 10);
-        out = new Number(out);
+        if (typeof value === 'number') {
+            out = new Number(value);
+        } else {
+            if (_in(value, '.'))
+                out = parseFloat(value);
+            else
+                out = parseInt(value, 10);
+            out = new Number(out);
+        }
         out.run = function() {return this;};
         out.compile = out.toString;
-        console.log(value, out);
+        out.optimize = function() {return this;};
         return out;
     }
 
@@ -55,9 +56,12 @@ var gbc = (function() {
         this.toString = function() {
             return "<Operation>";
         };
+        this.optimize = function() {
+            console.log('Undefined optimization on ' + this.toString());
+            return this;
+        };
     }
     function Statement() {
-        this.has_return_value = return_false;
         this.toString = function() {
             return "<" + this.name + ">";
         };
@@ -65,7 +69,6 @@ var gbc = (function() {
     Statement.prototype = new Operation;
 
     function Expression() {
-        this.has_return_value = return_true;
         this.value = null;
     }
     Expression.prototype = new Operation;
@@ -74,6 +77,10 @@ var gbc = (function() {
         this.name = "Unknown";
         this.body = null;
         this.push = function(node) {this.body = node;};
+        this.optimize = function() {
+            this.body = this.body.optimize();
+            return this;
+        };
     }
     PrefixOperation.prototype = new Statement;
 
@@ -101,6 +108,13 @@ var gbc = (function() {
         this.compile = function() {
             return '(-1 * ' + this.body.compile() + ')';
         };
+        this.optimize = function() {
+            if (this.body instanceof Number) {
+                return literal(-1 * this.body.optimize());
+            }
+            this.body = this.body.optimize();
+            return this;
+        };
     }).prototype = new PrefixExpression;
 
     (operations["N"] = function() {
@@ -110,6 +124,13 @@ var gbc = (function() {
         };
         this.compile = function() {
             return '(!' + this.body.compile() + ')';
+        };
+        this.optimize = function() {
+            if (this.body instanceof Number) {
+                return literal(!this.body.optimize());
+            }
+            this.body = this.body.optimize();
+            return this;
         };
     }).prototype = new PrefixExpression;
 
@@ -148,6 +169,17 @@ var gbc = (function() {
         this.compile = function() {
             return '(' + this.body.value[0].compile() + ' ? ' + this.body.value[1].compile() + ' : ' + this.body.value[2].compile() + ')';
         };
+        this.optimize = function() {
+            if (this.body.value[0] instanceof Number) {
+                if (!!this.body.value[0]) {
+                    return this.body.value[1].optimize();
+                } else {
+                    return this.body.value[2].optimize();
+                }
+            }
+            this.body = this.body.optimize();
+            return this;
+        };
     }).prototype = new PrefixExpression;
 
     (operations["X"] = function() {
@@ -171,6 +203,13 @@ var gbc = (function() {
         this.compile = function() {
             return 'Math.sin(' + this.body.compile() + ')';
         };
+        this.optimize = function() {
+            if (this.body instanceof Number) {
+                return literal(Math.sin(this.body.optimize()));
+            }
+            this.body = this.body.optimize();
+            return this;
+        };
     };
     SinOperation.prototype = new PrefixExpression;
 
@@ -182,6 +221,13 @@ var gbc = (function() {
         };
         this.compile = function() {
             return 'Math.cos(' + this.body.compile() + ')';
+        };
+        this.optimize = function() {
+            if (this.body instanceof Number) {
+                return literal(Math.cos(this.body.optimize()));
+            }
+            this.body = this.body.optimize();
+            return this;
         };
     };
     CosOperation.prototype = new PrefixExpression;
@@ -195,6 +241,13 @@ var gbc = (function() {
         this.compile = function() {
             return 'Math.tan(' + this.body.compile() + ')';
         };
+        this.optimize = function() {
+            if (this.body instanceof Number) {
+                return literal(Math.tan(this.body.optimize()));
+            }
+            this.body = this.body.optimize();
+            return this;
+        };
     };
     TanOperation.prototype = new PrefixExpression;
 
@@ -206,6 +259,13 @@ var gbc = (function() {
         };
         this.compile = function() {
             return '(1 / Math.cos(' + this.body.compile() + '))';
+        };
+        this.optimize = function() {
+            if (this.body instanceof Number) {
+                return literal(1 / Math.cos(this.body.optimize()));
+            }
+            this.body = this.body.optimize();
+            return this;
         };
     };
     SecOperation.prototype = new PrefixExpression;
@@ -219,6 +279,13 @@ var gbc = (function() {
         this.compile = function() {
             return '(1 / Math.sin(' + this.body.compile() + '))';
         };
+        this.optimize = function() {
+            if (this.body instanceof Number) {
+                return literal(1 / Math.sin(this.body.optimize()));
+            }
+            this.body = this.body.optimize();
+            return this;
+        };
     };
     CscOperation.prototype = new PrefixExpression;
 
@@ -230,6 +297,13 @@ var gbc = (function() {
         };
         this.compile = function() {
             return '(1 / Math.tan(' + this.body.compile() + '))';
+        };
+        this.optimize = function() {
+            if (this.body instanceof Number) {
+                return literal(1 / Math.tan(this.body.optimize()));
+            }
+            this.body = this.body.optimize();
+            return this;
         };
     };
     CotOperation.prototype = new PrefixExpression;
@@ -269,6 +343,7 @@ var gbc = (function() {
             else
                 throw new Error("Unsupported inversion operation.");
         };
+        // TODO(optimizer): Write an optimizer for this.
     }).prototype = new PrefixExpression;
 
     (operations["_"] = function() {
@@ -278,6 +353,13 @@ var gbc = (function() {
         };
         this.compile = function() {
             return 'Math.floor(' + this.body.compile() + ')';
+        };
+        this.optimize = function() {
+            if (this.body instanceof Number) {
+                return literal(Math.floor(this.body.optimize()));
+            }
+            this.body = this.body.optimize();
+            return this;
         };
     }).prototype = new PrefixExpression;
 
@@ -289,6 +371,13 @@ var gbc = (function() {
         this.compile = function() {
             return 'Math.ceil(' + this.body.compile() + ')';
         };
+        this.optimize = function() {
+            if (this.body instanceof Number) {
+                return literal(Math.ceil(this.body.optimize()));
+            }
+            this.body = this.body.optimize();
+            return this;
+        };
     }).prototype = new PrefixExpression;
 
     (operations["\""] = function() {
@@ -299,6 +388,13 @@ var gbc = (function() {
         this.compile = function() {
             return 'Math.pow(' + this.body.compile() + ', 2)';
         };
+        this.optimize = function() {
+            if (this.body instanceof Number) {
+                return literal(Math.pow(this.body.optimize(), 2));
+            }
+            this.body = this.body.optimize();
+            return this;
+        };
     }).prototype = new PrefixExpression;
 
     (operations["\\"] = function() {
@@ -308,6 +404,13 @@ var gbc = (function() {
         };
         this.compile = function() {
             return 'Math.sqrt(' + this.body.compile() + ')';
+        };
+        this.optimize = function() {
+            if (this.body instanceof Number) {
+                return literal(Math.sqrt(this.body.optimize()));
+            }
+            this.body = this.body.optimize();
+            return this;
         };
     }).prototype = new PrefixExpression;
 
@@ -400,6 +503,11 @@ var gbc = (function() {
                 output.push(this.body[k].toString());
             return "block(" + this.name + "){" + output.join(", ") + "}";
         };
+        this.optimize = function() {
+            for (var k in this.body)
+                this.body[k] = this.body[k].optimize();
+            return this;
+        };
     }
     BlockOperation.prototype = new Operation;
 
@@ -436,6 +544,12 @@ var gbc = (function() {
             for (var k in this.body)
                 output.push(this.body[k].toString());
             return "block(" + this.name + ")<" + this.first + ">{" + output.join(",") + "}";
+        };
+        this.optimize = function() {
+            this.first = this.first.optimize();
+            for (var k in this.body)
+                this.body[k] = this.body[k].optimize();
+            return this;
         };
     }
     FirstExprBlockOperation.prototype = new BlockOperation;
@@ -515,6 +629,11 @@ var gbc = (function() {
         this.compile = function() {
             return '(' + this.body.map(function(n) {return n.compile()}).join(' || ') + ')';
         };
+        this.optimize = function() {
+            // TODO(optimizer): Write a proper optimizer for this.
+            this.body = this.body.map(function(n) {return n.optimize()});
+            return this;
+        };
     }).prototype = new BlockOperation;
 
     (operations["A"] = function() {
@@ -528,6 +647,11 @@ var gbc = (function() {
         };
         this.compile = function() {
             return '(' + this.body.map(function(n) {return n.compile()}).join(' && ') + ')';
+        };
+        this.optimize = function() {
+            // TODO(optimizer): Write a proper optimizer for this.
+            this.body = this.body.map(function(n) {return n.optimize()});
+            return this;
         };
     }).prototype = new BlockOperation;
 
@@ -546,6 +670,11 @@ var gbc = (function() {
         this.compile = function() {
             return '[' + this.body.map(function(n) {return n.compile()}).join(', ') + '].reduce(function(p, c) {return p + c;}, 0)';
         };
+        this.optimize = function() {
+            // TODO(optimizer): (!) Write a proper optimizer for this.
+            this.body = this.body.map(function(n) {return n.optimize()});
+            return this;
+        };
     }).prototype = new BlockOperation;
 
     (operations[";"] = function() {
@@ -554,7 +683,7 @@ var gbc = (function() {
             throw new Error("FIXME: Not implemented");
         };
         this.compile = function() {
-            return 'break';
+            return 'return';  // Loops are wrapped in closures.
         };
     }).prototype = new Statement;
 
@@ -615,6 +744,23 @@ var gbc = (function() {
             else
                 return 'canvas.set_color([' + this.body.value[0].compile() + '|0, ' + this.body.value[1].compile() + '|0, ' + this.body.value[2].compile() + '|0, ' + this.body.value[3].compile() + '])';
         };
+        this.optimize = function() {
+            this.body = this.body.optimize();
+            var body = this.body.value.slice(0, 3).map(function(n) {
+                if (n instanceof Number) {
+                    return literal(n | 0);
+                }
+                return n.optimize();
+            });
+            if (this.body.value.length === 3) {
+                body.push(literal(1));
+            } else {
+                body.push(this.body.value[3].optimize());
+            }
+
+            this.body.value = body;
+            return this;
+        };
     }).prototype = new PrefixStatement;
 
     (operations["H"] = function() {
@@ -633,6 +779,55 @@ var gbc = (function() {
                 return 'canvas.set_hsl([' + this.body.value[0].compile() + '|0, (' + this.body.value[1].compile() + '/ 255 * 100 | 0) + "%", (' + this.body.value[2].compile() + '/ 255 * 100 | 0) + "%", 1])';
             else
                 return 'canvas.set_hsl([' + this.body.value[0].compile() + '|0, (' + this.body.value[1].compile() + '/ 255 * 100 | 0) + "%", (' + this.body.value[2].compile() + '/ 255 * 100 | 0) + "%", ' + this.body.value[3].compile() + '])';
+        };
+        this.optimize = function() {
+            this.body = this.body.optimize();
+            var tbv = this.body.value;
+            var optimized = [false, false, false, false]
+            if (tbv[0] instanceof Number) {
+                tbv[0] = literal(tbv[0] | 0);
+                optimized[0] = true;
+            }
+            if (tbv[1] instanceof Number) {
+                tbv[1] = literal(tbv[1] / 255 * 100 | 0);
+                optimized[1] = true;
+            }
+            if (tbv[2] instanceof Number) {
+                tbv[2] = literal(tbv[2] / 255 * 100 | 0);
+                optimized[2] = true;
+            }
+            if (tbv.length === 3) {
+                tbv.push(literal(1));
+                optimized[3] = true;
+            }
+
+            this.compile = function() {
+                return 'canvas.set_hsl([' +
+                    tbv.map(function(n, i) {
+                        if (optimized[i]) {
+                            switch (i) {
+                                case 0:
+                                case 3:
+                                    return n;
+                                case 1:
+                                case 2:
+                                    return n + ' + "%"';
+                            }
+                        } else {
+                            switch (i) {
+                                case 0:
+                                    return n.compile() + ' | 0';
+                                case 1:
+                                case 2:
+                                    return '(' + n + ' / 255 * 100 | 0) + "%"';
+                                case 3:
+                                    return n.compile();
+                            }
+                        }
+                    }).join(', ') +
+                    '])';
+            };
+            return this;
         };
     }).prototype = new PrefixStatement;
 
@@ -692,6 +887,14 @@ var gbc = (function() {
         };
         this.compile = function() {
             return '(' + this.left.compile() + ' ' + this.name + ' ' + this.right.compile() + ')';
+        };
+        this.optimize = function() {
+            this.left = this.left.optimize();
+            this.right = this.right.optimize();
+            if (this.left instanceof Number && this.right instanceof Number) {
+                return literal(this._run(this.left, this.right));
+            }
+            return this;
         };
     }
     InfixOperation.prototype = new Expression;
@@ -794,6 +997,10 @@ var gbc = (function() {
             for (var k in this.value)
                 output.push(this.value[k].toString());
             return "[" + output.join(",") + "]";
+        };
+        this.optimize = function() {
+            this.value = this.value.map(function(n) {return n.optimize();});
+            return this;
         };
     };
     Continuation.prototype = new InfixOperation;
@@ -1052,7 +1259,6 @@ var gbc = (function() {
             this.transforms = [];
         },
         pop: function() {
-            console.log("pop");
             this.transforms.pop();
         },
         set_color: function(rgba) {
@@ -1106,7 +1312,6 @@ var gbc = (function() {
             this.scratch[1] += this.cursor[1];
         },
         dot: function() {
-            console.log("dot");
             this.get_cursor_null();
             //this.canvas.fillRect(this.scratch[0], this.scratch[1], 1, 1);
             this.canvas.moveTo(this.scratch[0] | 0, this.scratch[0] | 0);
@@ -1158,6 +1363,8 @@ var gbc = (function() {
         var out = 'return function(canvas) {\n';
         out += 'var id;\n';
         out += 'var context = {};\n';
+
+        tree = tree.optimize();
         out += tree.compile();
 
         out += '}';
