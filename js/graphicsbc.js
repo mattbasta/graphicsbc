@@ -465,15 +465,10 @@ var gbc = (function() {
             return out;
         };
         this.compile = function() {
-            var out = '(function() {';
-            out += 'var func = ' + this.body.value[0].compile() + ';';
-            out += 'if (!(func in functions)) {';
-            out += 'throw new Error("Function " + func + " not yet defined");';
-            out += '}';
-            out += 'for (var i = 0; i < arguments.length; i++) {';
-            out += 'context[~i] = arguments[i];';
-            out += '}';
-            out += 'functions[func]();';
+            var out = '(function() {\n';
+            out += 'var func = use_func(' + this.body.value[0].compile() + ');\n';
+            out += 'fill_args(arguments);\n';
+            out += 'functions[func]();\n';
             out += '})(';
             out += this.body.value.slice(1).map(function(n) {return n.compile();}).join(', ');
             out += ')';
@@ -1374,7 +1369,8 @@ var gbc = (function() {
         var tree = parse(data);
         var context = new Context(canvas);
         var output = tree.run(context);
-
+        console.log('Output: ' + output);
+        return output;
     }
 
     function compile(canvas, data) {
@@ -1383,6 +1379,8 @@ var gbc = (function() {
         out += 'var id;\n';
         out += 'var context = {};\n';
         out += 'var functions = {};\n';
+        out += 'function use_func(n) {if (!(n in functions)) {throw new Error(n + " not yet defined");}return n;}\n';
+        out += 'function fill_args(args) {for (var i = 0; i < args.length; i++) {context[~i] = args[i];}}\n';
 
         tree = tree.optimize();
         out += tree.compile();
