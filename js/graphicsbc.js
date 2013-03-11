@@ -748,13 +748,13 @@ var gbc = (function() {
             body[0] = body[0]|0;
             body[1] = body[1]|0;
             body[2] = body[2]|0;
-            context.canvas.set_color(body);
+            context.canvas.set_color.apply(context.canvas, body);
         });
         this.compile = function() {
             if (this.body.value.length === 3)
-                return 'canvas.set_color([' + this.body.value[0].compile() + '|0, ' + this.body.value[1].compile() + '|0, ' + this.body.value[2].compile() + '|0, 1])';
+                return 'canvas.set_color(' + this.body.value[0].compile() + '|0, ' + this.body.value[1].compile() + '|0, ' + this.body.value[2].compile() + '|0, 1)';
             else
-                return 'canvas.set_color([' + this.body.value[0].compile() + '|0, ' + this.body.value[1].compile() + '|0, ' + this.body.value[2].compile() + '|0, ' + this.body.value[3].compile() + '])';
+                return 'canvas.set_color(' + this.body.value[0].compile() + '|0, ' + this.body.value[1].compile() + '|0, ' + this.body.value[2].compile() + '|0, ' + this.body.value[3].compile() + ')';
         };
         this.optimize = function() {
             this.body = this.body.optimize();
@@ -784,13 +784,13 @@ var gbc = (function() {
             body[0] = body[0] | 0;
             body[1] = (body[1] / 255 * 100 | 0) + '%';
             body[2] = (body[2] / 255 * 100 | 0) + '%';
-            context.canvas.set_hsl(body);
+            context.canvas.set_hsl.apply(context.canvas, body);
         });
         this.compile = function() {
             if (this.body.value.length === 3)
-                return 'canvas.set_hsl([' + this.body.value[0].compile() + '|0, (' + this.body.value[1].compile() + '/ 255 * 100 | 0) + "%", (' + this.body.value[2].compile() + '/ 255 * 100 | 0) + "%", 1])';
+                return 'canvas.set_hsl(' + this.body.value[0].compile() + '|0, (' + this.body.value[1].compile() + '/ 255 * 100 | 0) + "%", (' + this.body.value[2].compile() + '/ 255 * 100 | 0) + "%", 1)';
             else
-                return 'canvas.set_hsl([' + this.body.value[0].compile() + '|0, (' + this.body.value[1].compile() + '/ 255 * 100 | 0) + "%", (' + this.body.value[2].compile() + '/ 255 * 100 | 0) + "%", ' + this.body.value[3].compile() + '])';
+                return 'canvas.set_hsl(' + this.body.value[0].compile() + '|0, (' + this.body.value[1].compile() + '/ 255 * 100 | 0) + "%", (' + this.body.value[2].compile() + '/ 255 * 100 | 0) + "%", ' + this.body.value[3].compile() + ')';
         };
         this.optimize = function() {
             this.body = this.body.optimize();
@@ -814,7 +814,7 @@ var gbc = (function() {
             }
 
             this.compile = function() {
-                return 'canvas.set_hsl([' +
+                return 'canvas.set_hsl(' +
                     tbv.map(function(n, i) {
                         if (optimized[i]) {
                             switch (i) {
@@ -837,7 +837,7 @@ var gbc = (function() {
                             }
                         }
                     }).join(', ') +
-                    '])';
+                    ')';
             };
             return this;
         };
@@ -846,20 +846,21 @@ var gbc = (function() {
     (operations["p"] = function() {
         this.name = "Cursor";
         this.run = expect_continuation(this, 2)(function(context) {
-            context.canvas.set_cursor(this.body.run(context));
+            context.canvas.set_cursor.apply(context.canvas, this.body.run(context));
         });
         this.compile = function() {
-            return 'canvas.set_cursor([' + this.body.value[0].compile() + ', ' + this.body.value[1].compile() + '])';
+            return 'canvas.set_cursor(' + this.body.value[0].compile() + ', ' + this.body.value[1].compile() + ')';
         };
     }).prototype = new PrefixStatement;
 
     (operations["t"] = function() {
         this.name = "Translate";
         this.run = expect_continuation(this, 2)(function(context) {
-            context.canvas.translate(this.body.run(context));
+            var out = this.body.run(context);
+            context.canvas.translate(out[0], out[1]);
         });
         this.compile = function() {
-            return 'canvas.translate([' + this.body.value[0].compile() + ', ' + this.body.value[1].compile() + '])';
+            return 'canvas.translate(' + this.body.value[0].compile() + ', ' + this.body.value[1].compile() + ')';
         };
     }).prototype = new PrefixStatement;
 
@@ -876,10 +877,11 @@ var gbc = (function() {
     (operations["S"] = function() {
         this.name = "Scale";
         this.run = expect_continuation(this, 2)(function(context) {
-            context.canvas.scale(this.body.run(context));
+            var out = this.body.run(context);
+            context.canvas.scale(out[0], out[1]);
         });
         this.compile = function() {
-            return 'canvas.scale([' + this.body.value[0].compile() + ', ' + this.body.value[1].compile() + '])';
+            return 'canvas.scale(' + this.body.value[0].compile() + ', ' + this.body.value[1].compile() + ')';
         };
     }).prototype = new PrefixStatement;
 
@@ -1230,11 +1232,11 @@ var gbc = (function() {
         return body;
     }
 
-    function TranslateTransform(xy) {
-        this.x = xy[0];
-        this.y = xy[1];
-        this.get = function(xy) {
-            return [this.x + xy[0], this.y + xy[1]];
+    function TranslateTransform(x, y) {
+        this.x = x;
+        this.y = y;
+        this.get = function(x, y) {
+            return [this.x + x, this.y + y];
         };
         this.get_ip = function(xy) {
             xy[0] += this.x;
@@ -1256,11 +1258,11 @@ var gbc = (function() {
         };
     }
 
-    function ScaleTransform(xy) {
-        this.x = xy[0];
-        this.y = xy[1];
-        this.get = function(xy) {
-            return [this.x * xy[0], this.y * xy[1]];
+    function ScaleTransform(x, y) {
+        this.x = x;
+        this.y = y;
+        this.get = function(x, y) {
+            return [this.x * x, this.y * y];
         };
         this.get_ip = function(xy) {
             xy[0] *= this.x;
@@ -1298,41 +1300,38 @@ var gbc = (function() {
                 this.canvas.strokeStyle =
                     this.color = "rgba(" + rgba.join(",") + ")");
         },
-        set_hsl: function(hsla) {
+        set_hsl: function(h, s, l, a) {
             console.log("set hsl",
                 this.canvas.strokeStyle =
-                    this.color = "hsla(" + hsla.join(",") + ")");
+                    this.color = "hsla(" + h + ", " + s + ", " + l + ", " + a + ")");
         },
-        set_cursor: function(xy) {
-            console.log("set cursor", xy[0]|0, xy[1]|0);
-            this.cursor = xy;
-            this.set_cursor = true;
+        set_cursor: function(x, y) {
+            console.log("set cursor", x|0, y|0);
+            this.cursor[0] = x;
+            this.cursor[1] = y;
         },
-        translate: function(xy) {
-            //console.log("translate", xy[0]|0, xy[1]|0);
+        translate: function(x, y) {
             var last = this.transforms[this.transforms.length - 1];
             if (last instanceof TranslateTransform) {
-                last.x += xy[0];
-                last.y += xy[1];
+                last.x += x;
+                last.y += y;
             } else
-                this.transforms.push(new TranslateTransform(xy));
+                this.transforms.push(new TranslateTransform(x, y));
         },
         rotate: function(deg) {
-            //console.log("rotate", deg + 0);
             var last = this.transforms[this.transforms.length - 1];
             if (last instanceof RotateTransform)
                 last.theta += deg;
             else
                 this.transforms.push(new RotateTransform(deg));
         },
-        scale: function(xy) {
-            //console.log("scale", xy[0] + 0, xy[1] + 0);
+        scale: function(x, y) {
             var last = this.transforms[this.transforms.length - 1];
             if (last instanceof ScaleTransform) {
-                last.x *= xy[0];
-                last.y *= xy[1];
+                last.x *= x;
+                last.y *= y;
             } else
-                this.transforms.push(new ScaleTransform(xy));
+                this.transforms.push(new ScaleTransform(x, y));
         },
         get_cursor_null: function() {
             this.scratch[0] = 0;
