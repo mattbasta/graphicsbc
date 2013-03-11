@@ -435,6 +435,23 @@ var gbc = (function() {
                 return 'context[' + this.body.compile() + ']';
             }
         };
+        this.optimize = function() {
+            this.body = this.body.optimize();
+
+            // If this is an assignment where the value is a mutation of itself,
+            // try to optimize it into an augmented assignment.
+            if (this.body instanceof Continuation && this.body.value.length === 2 &&  // It's an assignment
+                this.body.value[1] instanceof InfixOperation &&  // It's setting an infix operation to the value
+                this.body.value[1].left instanceof operations["a"] &&  // The left side of the infix operator is the right node type
+                !(this.body.value[1].left.body instanceof Continuation) &&  // The left side is a variable fetch
+                this.body.value[1].left.body.compile() === this.body.value[0].compile() &&  // It's a self-mutation
+                ('+-*/%').indexOf(this.body.value[1].name) !== -1) {  // It's an acceptable operator!
+                this.compile = function() {
+                    return '(context[' + this.body.value[0].compile() + '] ' + this.body.value[1].name + '= ' + this.body.value[1].right.compile() + ')';
+                };
+            }
+            return this;
+        };
     }).prototype = new PrefixExpression;
 
     (operations["q"] = function() {
@@ -806,7 +823,7 @@ var gbc = (function() {
                                     return n;
                                 case 1:
                                 case 2:
-                                    return n + ' + "%"';
+                                    return '"' + n + '%"';
                             }
                         } else {
                             switch (i) {
