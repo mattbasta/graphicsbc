@@ -4,6 +4,11 @@ var gbc = (function() {
 
     var operations = {};
 
+    var _uid = 0;
+    function next_uid() {
+        return ++_uid;
+    }
+
     function _in(haystack, needle) {
         if (typeof haystack === "string") {
             return haystack.indexOf(needle) > -1;
@@ -578,11 +583,10 @@ var gbc = (function() {
                     this.body[j].run(context);
         };
         this.compile = function() {
-            return '(function() {' +
-                   'for(var i = 0; i < ' + this.first.compile() + '; i++) {' +
+            var uid = next_uid();
+            return ';for(var i' + uid + ' = 0; i' + uid + ' < ' + this.first.compile() + '; i' + uid + '++) {\n' +
                    this.body.map(function(n) {return n.compile();}).join(';\n') + ';\n' +
-                   '}' +
-                   '})()';
+                   '}';
         };
     }).prototype = new FirstExprBlockOperation;
 
@@ -595,7 +599,7 @@ var gbc = (function() {
                     this.body[j].run(context);
         };
         this.compile = function() {
-            return 'if(' + this.first.compile() + ') {' +
+            return ';if(' + this.first.compile() + ') {' +
                    this.body.map(function(n) {return n.compile();}).join(';\n') + ';\n' +
                    '}';
         };
@@ -695,7 +699,7 @@ var gbc = (function() {
             throw new Error("FIXME: Not implemented");
         };
         this.compile = function() {
-            return 'return';  // Loops are wrapped in closures.
+            return 'break';
         };
     }).prototype = new Statement;
 
@@ -1361,8 +1365,114 @@ var gbc = (function() {
         }
     };
 
+    function THREEDEECanvasWrap(canvas) {
+        this.canvas = null;
+
+        try {
+            this.canvas = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+        } catch(e) {}
+        if (!this.canvas) {
+            alert('WebGL could not be initialized.');
+            return false;
+        }
+
+        var gl = this.canvas;
+        gl.clearColor(1.0, 1.0, 1.0, 1.0);
+        gl.enable(gl.DEPTH_TEST);
+        gl.depthFunc(gl.LEQUAL);
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+        this.cursor = [0, 0, 0];
+        this.last_point = [0, 0, 0];
+        this.transforms = [];
+        this.scratch = [];
+
+        this.canvas.strokeStyle = "black";
+        this.canvas.clearRect(0, 0, canvas.width, canvas.height);
+    }
+    THREEDEECanvasWrap.prototype = {
+        canvas: null,
+        cursor: null,
+        last_point: null,
+        transforms: null,
+        scratch: null,
+        color: "#000",
+        clear_transforms: function() {
+            console.log("Clearing transforms");
+            this.transforms = [];
+        },
+        pop: function() {
+            this.transforms.pop();
+        },
+        set_color: function(rgba) {
+            console.log(
+                "set color",
+                this.canvas.strokeStyle =
+                    this.color = "rgba(" + rgba.join(",") + ")");
+        },
+        set_hsl: function(h, s, l, a) {
+            console.log("set hsl",
+                this.canvas.strokeStyle =
+                    this.color = "hsla(" + h + ", " + s + ", " + l + ", " + a + ")");
+        },
+        set_cursor: function(x, y) {
+            console.log("set cursor", x|0, y|0);
+            this.cursor[0] = x;
+            this.cursor[1] = y;
+        },
+        translate: function(x, y) {
+            var last = this.transforms[this.transforms.length - 1];
+            if (last instanceof TranslateTransform) {
+                last.x += x;
+                last.y += y;
+            } else
+                this.transforms.push(new TranslateTransform(x, y));
+        },
+        rotate: function(deg) {
+            var last = this.transforms[this.transforms.length - 1];
+            if (last instanceof RotateTransform)
+                last.theta += deg;
+            else
+                this.transforms.push(new RotateTransform(deg));
+        },
+        scale: function(x, y) {
+            var last = this.transforms[this.transforms.length - 1];
+            if (last instanceof ScaleTransform) {
+                last.x *= x;
+                last.y *= y;
+            } else
+                this.transforms.push(new ScaleTransform(x, y));
+        },
+        get_cursor_null: function() {
+            this.scratch[0] = 0;
+            this.scratch[1] = 0;
+            for (var i = 0; i < this.transforms.length; i++)
+                this.transforms[i].get_ip(this.scratch);
+            this.scratch[0] += this.cursor[0];
+            this.scratch[1] += this.cursor[1];
+        },
+        dot: function() {
+            this.get_cursor_null();
+            //this.canvas.fillRect(this.scratch[0], this.scratch[1], 1, 1);
+            this.canvas.moveTo(this.scratch[0] | 0, this.scratch[0] | 0);
+            this.canvas.lineTo(this.scratch[0] | 0, this.scratch[1] | 0);
+            this.canvas.beginPath();
+            this.last_point[0] = this.scratch[0];
+            this.last_point[1] = this.scratch[1];
+        },
+        line: function() {
+            //console.log("line");
+            this.get_cursor_null();
+            //this.canvas.moveTo(this.last_point[0] | 0, this.last_point[1] | 0);
+            this.canvas.lineTo(this.scratch[0] | 0, this.scratch[1] | 0);
+            this.canvas.stroke();
+            this.last_point[0] = this.scratch[0];
+            this.last_point[1] = this.scratch[1];
+        }
+    };
+
     function Context(canvas) {
-        this.canvas = new CanvasWrap(canvas);
+        this.canvas = new THREEDEECanvasWrap(canvas);
         this.vars = {};
         this.funcs = {};
     }
@@ -1412,7 +1522,7 @@ var gbc = (function() {
         out += '}';
         console.log(out);
         var compiled = new Function(out);
-        compiled()(new CanvasWrap(canvas));
+        compiled()(new THREEDEECanvasWrap(canvas));
         return compiled;
     }
 

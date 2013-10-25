@@ -1,7 +1,7 @@
 Graphics Bytecode
 =================
 
-Version 0.1
+Version 0.2
 
 GBC is a bytecode language intended for use by code golfers and hobbyists
 to create interesting and fun scripts that generate graphical output.
